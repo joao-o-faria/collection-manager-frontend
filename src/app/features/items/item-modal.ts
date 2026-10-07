@@ -5,6 +5,7 @@ import { BinaryObjectPayload } from '../../models/collection.model';
 import { Item, ItemSuggestion } from '../../models/item.model';
 import { ItemService } from '../../services/item.service';
 import { AlertService } from '../../services/alert.service';
+import { ImageService } from '../../services/image.service';
 import { tagColor } from '../../shared/utils/tag-color';
 
 @Component({
@@ -28,14 +29,14 @@ export class ItemModal {
       this.itemId = val.id;
       this.previewUrl.set(this.buildDataUrl(val.binary_object));
       this.existingFilename.set(val.binary_object?.filename ?? '');
-      this.existingBase64 = val.binary_object?.base64 ?? null;
+      this.existingImage = val.binary_object ?? null;
     } else {
       this.formData.set({ name: '', description: '', price: 0 });
       this.tags.set([]);
       this.itemId = null;
       this.previewUrl.set(null);
       this.existingFilename.set('');
-      this.existingBase64 = null;
+      this.existingImage = null;
     }
     this.tagInput.set('');
     this.newFile.set(null);
@@ -58,7 +59,7 @@ export class ItemModal {
   tagInput = signal<string>('');
   isLoading = signal(false);
   isSuggesting = signal(false);
-  private existingBase64: string | null = null;
+  private existingImage: { base64: string; extension: string } | null = null;
 
   tagStyle = (tag: string) => tagColor(tag);
 
@@ -101,7 +102,8 @@ export class ItemModal {
 
   constructor(
     private itemService: ItemService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private imageService: ImageService
   ) {}
 
   onFileSelected(event: Event): void {
@@ -125,7 +127,7 @@ export class ItemModal {
     reader.readAsDataURL(file);
   }
 
-  suggestWithAI(): void {
+  async suggestWithAI(): Promise<void> {
     const name = this.formData().name.trim();
     if (!name) {
       this.alertService.error('Preencha o nome do item antes de pedir uma sugestão.');
@@ -133,11 +135,25 @@ export class ItemModal {
     }
 
     this.isSuggesting.set(true);
+
+    // O Ollama só lê JPEG/PNG/BMP/GIF; convertemos (e reduzimos) a foto no navegador.
+    let imageBase64: string | null = null;
+    const photoUrl = this.buildDataUrl(this.newFile() ?? this.existingImage);
+    if (photoUrl) {
+      try {
+        imageBase64 = await this.imageService.toJpegBase64(photoUrl);
+      } catch {
+        this.alertService.error('Não foi possível ler a foto (formato não suportado). Use JPG, PNG ou WebP.');
+        this.isSuggesting.set(false);
+        return;
+      }
+    }
+
     this.itemService
       .suggestDetails({
         name,
         collection_id: this.collectionId,
-        image_base64: this.newFile()?.base64 ?? this.existingBase64,
+        image_base64: imageBase64,
       })
       .subscribe({
         next: (suggestion) => {
