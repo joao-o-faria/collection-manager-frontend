@@ -6,15 +6,16 @@ import { QuickAddService } from '../../services/quick-add.service';
 import { CategoryService } from '../../services/category';
 import { CollectionService } from '../../services/collection.service';
 import { AlertService } from '../../services/alert.service';
+import { AuthService } from '../../services/auth.service';
 import { QuickAddAnalysis } from '../../models/quick-add.model';
 
 const categories = [
-  { id: 1, name: 'Numismática' },
-  { id: 2, name: 'Miniaturas' },
+  { id: 1, name: 'Numismática', user_id: 1 },
+  { id: 2, name: 'Miniaturas', user_id: 1 },
 ];
 const collections = [
-  { id: 10, name: 'Moedas antigas', category_id: 1, category: categories[0] },
-  { id: 20, name: 'Hot Wheels', category_id: 2, category: categories[1] },
+  { id: 10, name: 'Moedas antigas', category_id: 1, category: categories[0], user_id: 1 },
+  { id: 20, name: 'Hot Wheels', category_id: 2, category: categories[1], user_id: 1 },
 ];
 const photo = { base64: 'aW1n', filename: 'a.jpg', extension: 'jpg' };
 
@@ -45,6 +46,7 @@ describe('QuickAddModal', () => {
         { provide: CollectionService, useValue: { getCollections: () => of(cols) } },
         { provide: AlertService, useValue: { error: alertError } },
         { provide: Router, useValue: { navigate, navigateByUrl } },
+        { provide: AuthService, useValue: { currentUser: () => ({ id: 1 }) } },
       ],
     });
     const fixture = TestBed.createComponent(QuickAddModal);
@@ -200,5 +202,15 @@ describe('QuickAddModal', () => {
     expect(alertError).toHaveBeenCalled();
     expect(modal.step()).toBe('review');
     expect(modal.isSaving()).toBe(false);
+  });
+
+  it('para admin, lista só categorias e coleções do próprio usuário', () => {
+    const otherCat = { id: 3, name: 'Selos de outro usuário', user_id: 2 };
+    const otherCol = { id: 30, name: 'Selos raros', category_id: 1, category: categories[0], user_id: 2 };
+    const modal = setup([...categories, otherCat], [...collections, otherCol]);
+
+    expect(modal.categories().map((c) => c.id)).toEqual([1, 2]);
+    modal.onCategoryChange(1);
+    expect(modal.filteredCollections().map((c) => c.id)).toEqual([10]);
   });
 });

@@ -9,6 +9,7 @@ import { QuickAddService } from '../../services/quick-add.service';
 import { CategoryService } from '../../services/category';
 import { CollectionService } from '../../services/collection.service';
 import { AlertService } from '../../services/alert.service';
+import { AuthService } from '../../services/auth.service';
 import { tagColor } from '../../shared/utils/tag-color';
 
 /** Valor usado nos selects para "criar nova". */
@@ -61,15 +62,22 @@ export class QuickAddModal implements OnInit {
     private collectionService: CollectionService,
     private alertService: AlertService,
     private router: Router,
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
+    // Admin recebe dados de todos os usuários; o cadastro rápido usa só os próprios
+    // (o backend aplica a mesma regra).
+    const ownerId = this.authService.currentUser()?.id;
+    const own = <T extends { user_id?: number }>(list: T[]) =>
+      list.filter((e) => e.user_id === undefined || e.user_id === ownerId);
+
     this.categoryService.getCategories().subscribe({
-      next: (cats) => this.categories.set(cats),
+      next: (cats) => this.categories.set(own(cats)),
       error: () => this.categories.set([]),
     });
     this.collectionService.getCollections().subscribe({
-      next: (cols) => this.collections.set(cols),
+      next: (cols) => this.collections.set(own(cols)),
       error: () => this.collections.set([]),
     });
   }
