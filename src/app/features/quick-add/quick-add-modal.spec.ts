@@ -7,6 +7,7 @@ import { CategoryService } from '../../services/category';
 import { CollectionService } from '../../services/collection.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
+import { ImageService } from '../../services/image.service';
 import { QuickAddAnalysis } from '../../models/quick-add.model';
 
 const categories = [
@@ -36,6 +37,7 @@ describe('QuickAddModal', () => {
   let alertError: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.fn>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
+  let toJpegBase64: ReturnType<typeof vi.fn>;
 
   function setup(cats = categories, cols = collections): QuickAddModal {
     TestBed.configureTestingModule({
@@ -47,6 +49,7 @@ describe('QuickAddModal', () => {
         { provide: AlertService, useValue: { error: alertError } },
         { provide: Router, useValue: { navigate, navigateByUrl } },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 1 }) } },
+        { provide: ImageService, useValue: { toJpegBase64 } },
       ],
     });
     const fixture = TestBed.createComponent(QuickAddModal);
@@ -60,6 +63,7 @@ describe('QuickAddModal', () => {
     alertError = vi.fn();
     navigate = vi.fn().mockResolvedValue(true);
     navigateByUrl = vi.fn().mockResolvedValue(true);
+    toJpegBase64 = vi.fn(async () => 'SlBFRw==');
   });
 
   it('preenche a revisão com a análise da IA', () => {
@@ -212,5 +216,25 @@ describe('QuickAddModal', () => {
     expect(modal.categories().map((c) => c.id)).toEqual([1, 2]);
     modal.onCategoryChange(1);
     expect(modal.filteredCollections().map((c) => c.id)).toEqual([10]);
+  });
+
+  it('converte a foto escolhida para JPEG (o Ollama não lê WebP)', async () => {
+    const modal = setup();
+
+    await modal.loadPhoto('data:image/webp;base64,V0VCUA==', 'moeda.webp');
+
+    expect(toJpegBase64).toHaveBeenCalledWith('data:image/webp;base64,V0VCUA==');
+    expect(modal.photo()).toEqual({ base64: 'SlBFRw==', filename: 'moeda.jpg', extension: 'jpg' });
+    expect(modal.previewUrl()).toBe('data:image/jpeg;base64,SlBFRw==');
+  });
+
+  it('avisa quando o formato da foto não é suportado', async () => {
+    toJpegBase64.mockRejectedValue(new Error('Formato de imagem não suportado'));
+    const modal = setup();
+
+    await modal.loadPhoto('data:image/heic;base64,SEVJQw==', 'foto.heic');
+
+    expect(modal.photo()).toBeNull();
+    expect(alertError).toHaveBeenCalledWith(expect.stringContaining('formato'));
   });
 });

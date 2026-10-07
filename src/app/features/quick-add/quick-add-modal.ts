@@ -10,6 +10,7 @@ import { CategoryService } from '../../services/category';
 import { CollectionService } from '../../services/collection.service';
 import { AlertService } from '../../services/alert.service';
 import { AuthService } from '../../services/auth.service';
+import { ImageService } from '../../services/image.service';
 import { tagColor } from '../../shared/utils/tag-color';
 
 /** Valor usado nos selects para "criar nova". */
@@ -63,6 +64,7 @@ export class QuickAddModal implements OnInit {
     private alertService: AlertService,
     private router: Router,
     private authService: AuthService,
+    private imageService: ImageService,
   ) {}
 
   ngOnInit(): void {
@@ -93,16 +95,24 @@ export class QuickAddModal implements OnInit {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const base64 = result.split(',')[1] ?? '';
-      const dotIdx = file.name.lastIndexOf('.');
-      const extension = dotIdx >= 0 ? file.name.slice(dotIdx + 1).toLowerCase() : '';
-      this.photo.set({ base64, filename: file.name, extension });
-      this.previewUrl.set(result);
-    };
+    reader.onload = () => this.loadPhoto(reader.result as string, file.name);
     reader.onerror = () => this.alertService.error('Não foi possível ler o arquivo selecionado.');
     reader.readAsDataURL(file);
+  }
+
+  /** Converte a foto para JPEG reduzido: o Ollama só lê JPEG/PNG/BMP/GIF. */
+  async loadPhoto(dataUrl: string, filename: string): Promise<void> {
+    try {
+      const base64 = await this.imageService.toJpegBase64(dataUrl);
+      const dotIdx = filename.lastIndexOf('.');
+      const baseName = dotIdx > 0 ? filename.slice(0, dotIdx) : filename;
+      this.photo.set({ base64, filename: `${baseName}.jpg`, extension: 'jpg' });
+      this.previewUrl.set(`data:image/jpeg;base64,${base64}`);
+    } catch {
+      this.photo.set(null);
+      this.previewUrl.set(null);
+      this.alertService.error('Não foi possível ler a foto (formato não suportado). Use JPG, PNG ou WebP.');
+    }
   }
 
   analyze(): void {
