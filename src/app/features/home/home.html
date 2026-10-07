@@ -1,0 +1,108 @@
+<div class="home">
+  <section class="hero">
+    <h2>O que você procura na sua coleção?</h2>
+    <div class="search-row">
+      <input
+        type="text"
+        class="search-input"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        (keydown)="onKeydown($event)"
+        [disabled]="searching()"
+        placeholder="Ex.: coisas antigas, itens de metal, presentes..."
+        aria-label="Buscar na coleção"
+      />
+      <button class="btn-primary" (click)="search()" [disabled]="searching() || !query().trim()">
+        {{ searching() ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+
+    @if (!response()) {
+      <div class="suggestions">
+        @for (s of suggestions(); track s) {
+          <button type="button" class="chip" (click)="useSuggestion(s)" [disabled]="searching()">{{ s }}</button>
+        }
+      </div>
+    }
+  </section>
+
+  @if (response(); as res) {
+    <section class="results">
+      <div class="results-header">
+        <span class="mode-badge" [class.mode-text]="res.mode === 'text'">
+          {{ res.mode === 'semantic' ? '🔎 Busca por significado (IA)' : 'Busca por texto (IA indisponível)' }}
+        </span>
+        <button type="button" class="btn-secondary" (click)="clear()">Limpar busca</button>
+      </div>
+
+      @if (res.results.length === 0) {
+        <p class="empty">Nada encontrado para "{{ lastQuery() }}".</p>
+      } @else {
+        <div class="card-grid">
+          @for (r of res.results; track r.item.id) {
+            <button type="button" class="item-card" (click)="openItem(r.item)">
+              @if (imageUrl(r.item); as src) {
+                <img [src]="src" [alt]="r.item.name" />
+              } @else {
+                <div class="no-image">📦</div>
+              }
+              <div class="item-info">
+                <strong>{{ r.item.name }}</strong>
+                @if (r.item.collection) {
+                  <span class="meta">{{ r.item.collection.name }} · {{ r.item.collection.category.name }}</span>
+                }
+                @if (r.item.tags?.length) {
+                  <div class="tags">
+                    @for (tag of r.item.tags; track tag) {
+                      <span class="tag-chip" [style.background]="tagStyle(tag).background" [style.color]="tagStyle(tag).color" [style.borderColor]="tagStyle(tag).border">{{ tag }}</span>
+                    }
+                  </div>
+                }
+                @if (r.match === 'text') {
+                  <span class="exact-badge">Contém "{{ lastQuery() }}"</span>
+                } @else if (r.score !== null) {
+                  <div class="relevance" [title]="'Relevância em relação ao melhor resultado: ' + scorePercent(r.score) + '%'">
+                    <div class="bar"><div class="fill" [style.width.%]="scorePercent(r.score)"></div></div>
+                    <span>{{ scorePercent(r.score) }}%</span>
+                  </div>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (summary(); as s) {
+    <section class="dashboard">
+      <div class="stats">
+        <div class="stat"><span class="value">{{ s.totals.items }}</span><span class="label">Itens</span></div>
+        <div class="stat"><span class="value">{{ s.totals.collections }}</span><span class="label">Coleções</span></div>
+        <div class="stat"><span class="value">{{ s.totals.categories }}</span><span class="label">Categorias</span></div>
+        <div class="stat"><span class="value">{{ s.totals.total_value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</span><span class="label">Valor total</span></div>
+      </div>
+
+      @if (s.recent_items.length > 0) {
+        <h3>Últimos itens cadastrados</h3>
+        <div class="card-grid small">
+          @for (item of s.recent_items; track item.id) {
+            <button type="button" class="item-card" (click)="openItem(item)">
+              @if (imageUrl(item); as src) {
+                <img [src]="src" [alt]="item.name" />
+              } @else {
+                <div class="no-image">📦</div>
+              }
+              <div class="item-info">
+                <strong>{{ item.name }}</strong>
+                @if (item.collection) {
+                  <span class="meta">{{ item.collection.name }}</span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>
