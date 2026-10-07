@@ -2,7 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { CreateItemRequest, Item, UpdateItemRequest } from '../models/item.model';
+import {
+  CreateItemRequest,
+  Item,
+  ItemSuggestion,
+  SuggestItemRequest,
+  UpdateItemRequest,
+} from '../models/item.model';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +29,10 @@ export class ItemService {
 
   updateItem(id: number, item: UpdateItemRequest): Observable<Item> {
     return this.http.put<Item>(`${this.API_BASE}/items/${id}`, item);
+  }
+
+  suggestDetails(request: SuggestItemRequest): Observable<ItemSuggestion> {
+    return this.http.post<ItemSuggestion>(`${this.API_BASE}/items/suggest`, request);
   }
 
   deleteItem(id: number): Observable<void> {

@@ -20,6 +20,17 @@ export interface CreateItemRequest {
   binary_object?: BinaryObjectPayload | null;
 }
 
+export interface SuggestItemRequest {
+  name: string;
+  collection_id: number;
+  image_base64?: string | null;
+}
+
+export interface ItemSuggestion {
+  description: string;
+  tags: string[];
+}
+
 export interface UpdateItemRequest {
   name: string;
   description?: string | null;

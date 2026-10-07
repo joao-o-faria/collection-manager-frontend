@@ -2,9 +2,10 @@ import { Component, Input, Output, EventEmitter, signal, computed } from '@angul
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BinaryObjectPayload } from '../../models/collection.model';
-import { Item } from '../../models/item.model';
+import { Item, ItemSuggestion } from '../../models/item.model';
 import { ItemService } from '../../services/item.service';
 import { AlertService } from '../../services/alert.service';
+import { ImageService } from '../../services/image.service';
 import { tagColor } from '../../shared/utils/tag-color';
 
 @Component({
@@ -28,12 +29,14 @@ export class ItemModal {
       this.itemId = val.id;
       this.previewUrl.set(this.buildDataUrl(val.binary_object));
       this.existingFilename.set(val.binary_object?.filename ?? '');
+      this.existingImage = val.binary_object ?? null;
     } else {
       this.formData.set({ name: '', description: '', price: 0 });
       this.tags.set([]);
       this.itemId = null;
       this.previewUrl.set(null);
       this.existingFilename.set('');
+      this.existingImage = null;
     }
     this.tagInput.set('');
     this.newFile.set(null);
@@ -55,6 +58,8 @@ export class ItemModal {
   tags = signal<string[]>([]);
   tagInput = signal<string>('');
   isLoading = signal(false);
+  isSuggesting = signal(false);
+  private existingImage: { base64: string; extension: string } | null = null;
 
   tagStyle = (tag: string) => tagColor(tag);
 
@@ -97,7 +102,8 @@ export class ItemModal {
 
   constructor(
     private itemService: ItemService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private imageService: ImageService
   ) {}
 
   onFileSelected(event: Event): void {
@@ -119,6 +125,57 @@ export class ItemModal {
       this.alertService.error('Não foi possível ler o arquivo selecionado.');
     };
     reader.readAsDataURL(file);
+  }
+
+  async suggestWithAI(): Promise<void> {
+    const name = this.formData().name.trim();
+    if (!name) {
+      this.alertService.error('Preencha o nome do item antes de pedir uma sugestão.');
+      return;
+    }
+
+    this.isSuggesting.set(true);
+
+    // O Ollama só lê JPEG/PNG/BMP/GIF; convertemos (e reduzimos) a foto no navegador.
+    let imageBase64: string | null = null;
+    const photoUrl = this.buildDataUrl(this.newFile() ?? this.existingImage);
+    if (photoUrl) {
+      try {
+        imageBase64 = await this.imageService.toJpegBase64(photoUrl);
+      } catch {
+        this.alertService.error('Não foi possível ler a foto (formato não suportado). Use JPG, PNG ou WebP.');
+        this.isSuggesting.set(false);
+        return;
+      }
+    }
+
+    this.itemService
+      .suggestDetails({
+        name,
+        collection_id: this.collectionId,
+        image_base64: imageBase64,
+      })
+      .subscribe({
+        next: (suggestion) => {
+          this.applySuggestion(suggestion);
+          this.isSuggesting.set(false);
+        },
+        error: () => {
+          this.alertService.error('Não foi possível gerar a sugestão. Verifique se a IA está disponível.');
+          this.isSuggesting.set(false);
+        },
+      });
+  }
+
+  private applySuggestion(suggestion: ItemSuggestion): void {
+    this.formData.update((d) => ({ ...d, description: suggestion.description }));
+    this.tags.update((current) => {
+      const next = [...current];
+      for (const t of suggestion.tags) {
+        if (!next.includes(t)) next.push(t);
+      }
+      return next;
+    });
   }
 
   private buildDataUrl(bin: { base64: string; extension: string } | null | undefined): string | null {
