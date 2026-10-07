@@ -5,6 +5,7 @@ import { ItemList } from './features/items/items';
 import { LoginComponent } from './features/auth/login/login';
 import { RegisterComponent } from './features/auth/register/register';
 import { authGuard } from './guards/auth.guard';
+import { Home } from './features/home/home';
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
@@ -13,6 +14,11 @@ export const routes: Routes = [
     path: 'register',
     component: RegisterComponent,
     canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'home',
+    component: Home,
+    canActivate: [authGuard]
   },
   {
     path: 'categories',
@@ -29,6 +35,6 @@ export const routes: Routes = [
     component: ItemList,
     canActivate: [authGuard]
   },
-  { path: '', redirectTo: 'categories', pathMatch: 'full' },
-  { path: '**', redirectTo: 'categories' }
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: '**', redirectTo: 'home' }
 ];

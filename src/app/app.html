@@ -73,6 +73,7 @@
 
     <nav id="mobile-drawer" [class.open]="drawerOpen()">
       @if (currentUser()) {
+        <a routerLink="/home" routerLinkActive="active" (click)="closeDrawer()">Início</a>
         <a routerLink="/categories" routerLinkActive="active" (click)="closeDrawer()">Categorias</a>
         <a routerLink="/collections" routerLinkActive="active" (click)="closeDrawer()">Coleções</a>
         @if (currentUser()?.role === 'ADMIN') {
