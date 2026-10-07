@@ -29,7 +29,7 @@ export class LoginComponent {
     this.errorMessage = '';
     this.authService.login(this.credentials).subscribe({
       next: async () => {
-        await this.router.navigate(['/categories']);
+        await this.router.navigate(['/home']);
       },
       error: (err) => {
         const message = err.error?.error || 'Erro ao realizar login';

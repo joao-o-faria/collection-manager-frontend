@@ -18,6 +18,7 @@ export interface Collection {
   name: string;
   category_id: number;
   category: Category;
+  user_id?: number;
   binary_object_id?: number | null;
   binary_object?: BinaryObject | null;
 }

@@ -17,6 +17,18 @@
     </a>
 
     <div class="header-actions">
+      @if (currentUser()) {
+        <button
+          type="button"
+          class="quick-add-btn"
+          (click)="openQuickAdd()"
+          aria-label="Cadastro rápido com IA"
+          title="Cadastro rápido com IA"
+        >
+          ✨ <span class="quick-add-label">Cadastro rápido</span>
+        </button>
+      }
+
       <button
         type="button"
         class="theme-toggle"
@@ -61,6 +73,7 @@
 
     <nav id="mobile-drawer" [class.open]="drawerOpen()">
       @if (currentUser()) {
+        <a routerLink="/home" routerLinkActive="active" (click)="closeDrawer()">Início</a>
         <a routerLink="/categories" routerLinkActive="active" (click)="closeDrawer()">Categorias</a>
         <a routerLink="/collections" routerLinkActive="active" (click)="closeDrawer()">Coleções</a>
         @if (currentUser()?.role === 'ADMIN') {
@@ -89,5 +102,8 @@
     <router-outlet></router-outlet>
     <app-confirmation-modal></app-confirmation-modal>
     <app-alert-modal></app-alert-modal>
+    @if (quickAddOpen()) {
+      <app-quick-add-modal (onClose)="closeQuickAdd()"></app-quick-add-modal>
+    }
   </section>
 </main>

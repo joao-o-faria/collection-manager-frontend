@@ -1,0 +1,175 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>✨ Cadastro rápido</h2>
+      <button class="btn-close" (click)="close()" [disabled]="step() === 'analyzing' || isSaving()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (step() !== 'review') {
+        <p class="hint">Envie uma foto do item. A IA sugere nome, descrição, tags, categoria e coleção.</p>
+        <div class="form-group">
+          <label for="quick-add-photo">Foto</label>
+          <input
+            type="file"
+            id="quick-add-photo"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+            [disabled]="step() === 'analyzing'"
+          />
+        </div>
+        @if (previewUrl()) {
+          <div class="image-preview">
+            <img [src]="previewUrl()" alt="Prévia" />
+          </div>
+        }
+        @if (step() === 'analyzing') {
+          <div class="analyzing">
+            <span class="spinner" aria-hidden="true"></span>
+            Analisando imagem... (pode levar alguns segundos)
+          </div>
+        }
+      } @else {
+        <div class="review-header">
+          @if (previewUrl()) {
+            <img [src]="previewUrl()" alt="Prévia" />
+          }
+          <p class="hint">Revise as sugestões antes de cadastrar.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-category">
+            Categoria
+            <span class="badge" [class.badge-new]="categoryChoice() === NEW_REF">
+              {{ categoryChoice() === NEW_REF ? 'nova' : 'existente' }}
+            </span>
+          </label>
+          <select
+            id="quick-add-category"
+            [ngModel]="categoryChoice()"
+            (ngModelChange)="onCategoryChange($event)"
+            [disabled]="isSaving()"
+          >
+            @for (cat of categories(); track cat.id) {
+              <option [ngValue]="cat.id">{{ cat.name }}</option>
+            }
+            <option [ngValue]="NEW_REF">➕ Nova categoria</option>
+          </select>
+          @if (categoryChoice() === NEW_REF) {
+            <input
+              type="text"
+              [ngModel]="newCategoryName()"
+              (ngModelChange)="newCategoryName.set($event)"
+              [disabled]="isSaving()"
+              placeholder="Nome da nova categoria"
+            />
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-collection">
+            Coleção
+            <span class="badge" [class.badge-new]="collectionChoice() === NEW_REF">
+              {{ collectionChoice() === NEW_REF ? 'nova' : 'existente' }}
+            </span>
+          </label>
+          <select
+            id="quick-add-collection"
+            [ngModel]="collectionChoice()"
+            (ngModelChange)="onCollectionChange($event)"
+            [disabled]="isSaving()"
+          >
+            @for (col of filteredCollections(); track col.id) {
+              <option [ngValue]="col.id">{{ col.name }}</option>
+            }
+            <option [ngValue]="NEW_REF">➕ Nova coleção</option>
+          </select>
+          @if (collectionChoice() === NEW_REF) {
+            <input
+              type="text"
+              [ngModel]="newCollectionName()"
+              (ngModelChange)="newCollectionName.set($event)"
+              [disabled]="isSaving()"
+              placeholder="Nome da nova coleção"
+            />
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-name">Nome</label>
+          <input id="quick-add-name" type="text" [ngModel]="name()" (ngModelChange)="name.set($event)" [disabled]="isSaving()" />
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-description">Descrição</label>
+          <textarea
+            id="quick-add-description"
+            rows="3"
+            [ngModel]="description()"
+            (ngModelChange)="description.set($event)"
+            [disabled]="isSaving()"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-price">Valor (R$)</label>
+          <input
+            id="quick-add-price"
+            type="number"
+            step="0.01"
+            min="0"
+            [ngModel]="price()"
+            (ngModelChange)="price.set($event)"
+            [disabled]="isSaving()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="quick-add-tag-input">Tags</label>
+          <div class="tag-input-row">
+            <input
+              id="quick-add-tag-input"
+              type="text"
+              [ngModel]="tagInput()"
+              (ngModelChange)="tagInput.set($event)"
+              (keydown)="onTagKeydown($event)"
+              [disabled]="isSaving()"
+              placeholder="Digite uma tag e pressione Enter"
+            />
+            <button type="button" class="btn-secondary" (click)="addTagFromInput()" [disabled]="isSaving() || !tagInput().trim()">
+              Adicionar
+            </button>
+          </div>
+          @if (tags().length > 0) {
+            <div class="tag-list">
+              @for (tag of tags(); track tag) {
+                <span
+                  class="tag-chip"
+                  [style.background]="tagStyle(tag).background"
+                  [style.color]="tagStyle(tag).color"
+                  [style.borderColor]="tagStyle(tag).border"
+                >
+                  {{ tag }}
+                  <button type="button" class="tag-remove" (click)="removeTag(tag)" [disabled]="isSaving()" aria-label="Remover tag">&times;</button>
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close()" [disabled]="step() === 'analyzing' || isSaving()">Cancelar</button>
+      @if (step() !== 'review') {
+        <button class="btn-primary" (click)="analyze()" [disabled]="!photo() || step() === 'analyzing'">
+          {{ step() === 'analyzing' ? 'Analisando...' : 'Analisar com IA' }}
+        </button>
+      } @else {
+        <button class="btn-primary" (click)="save()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Cadastrando...' : 'Cadastrar' }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

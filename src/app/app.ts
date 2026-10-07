@@ -6,11 +6,12 @@ import { ThemeService } from './services/theme.service';
 
 import { ConfirmationModal } from './shared/confirmation-modal/confirmation-modal';
 import { AlertModal } from './shared/alert-modal/alert-modal';
+import { QuickAddModal } from './features/quick-add/quick-add-modal';
 
 @Component({
   standalone: true,
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ConfirmationModal, AlertModal],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ConfirmationModal, AlertModal, QuickAddModal],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -19,6 +20,7 @@ export class App {
   currentUser = computed(() => this.authService.currentUser());
   theme = computed(() => this.themeService.theme());
   drawerOpen = signal(false);
+  quickAddOpen = signal(false);
 
   constructor(
     private authService: AuthService,
@@ -35,6 +37,15 @@ export class App {
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+  }
+
+  openQuickAdd(): void {
+    this.closeDrawer();
+    this.quickAddOpen.set(true);
+  }
+
+  closeQuickAdd(): void {
+    this.quickAddOpen.set(false);
   }
 
   logout() {

@@ -1,4 +1,4 @@
-import { BinaryObject, BinaryObjectPayload } from './collection.model';
+import { BinaryObject, BinaryObjectPayload, Collection } from './collection.model';
 
 export interface Item {
   id: number;
@@ -9,6 +9,7 @@ export interface Item {
   collection_id: number;
   binary_object_id?: number | null;
   binary_object?: BinaryObject | null;
+  collection?: Collection | null;
 }
 
 export interface CreateItemRequest {
@@ -18,6 +19,17 @@ export interface CreateItemRequest {
   price: number;
   collection_id: number;
   binary_object?: BinaryObjectPayload | null;
+}
+
+export interface SuggestItemRequest {
+  name: string;
+  collection_id: number;
+  image_base64?: string | null;
+}
+
+export interface ItemSuggestion {
+  description: string;
+  tags: string[];
 }
 
 export interface UpdateItemRequest {
