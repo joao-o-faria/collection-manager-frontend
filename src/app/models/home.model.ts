@@ -3,6 +3,7 @@ import { Item } from './item.model';
 export interface SearchResult {
   item: Item;
   score: number | null;
+  match: 'text' | 'semantic';
 }
 
 export interface SearchResponse {

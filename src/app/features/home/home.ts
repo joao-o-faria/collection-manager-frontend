@@ -30,6 +30,14 @@ export class Home implements OnInit {
     return [...EXAMPLE_QUERIES, ...tags];
   });
 
+  /** Melhor nota entre os resultados por significado (referência da barra de relevância). */
+  private bestSemanticScore = computed(() => {
+    const scores = (this.response()?.results ?? [])
+      .filter((r) => r.match === 'semantic' && r.score !== null)
+      .map((r) => r.score as number);
+    return scores.length ? Math.max(...scores) : 0;
+  });
+
   tagStyle = (tag: string) => tagColor(tag);
 
   constructor(
@@ -84,8 +92,15 @@ export class Home implements OnInit {
     this.router.navigate(['/collections', item.collection_id, 'items']);
   }
 
+  /**
+   * Relevância relativa ao melhor resultado por significado. O cosseno bruto do
+   * embeddinggemma fica entre ~0,25 e ~0,5 mesmo nos acertos, e mostrá-lo cru
+   * faria o melhor resultado aparecer como "28%".
+   */
   scorePercent(score: number): number {
-    return Math.round(score * 100);
+    const best = this.bestSemanticScore();
+    if (best <= 0) return 0;
+    return Math.min(100, Math.round((score / best) * 100));
   }
 
   imageUrl(item: Item): string | null {

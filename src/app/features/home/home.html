@@ -58,8 +58,10 @@
                     }
                   </div>
                 }
-                @if (r.score !== null) {
-                  <div class="relevance" [title]="'Relevância: ' + scorePercent(r.score) + '%'">
+                @if (r.match === 'text') {
+                  <span class="exact-badge">Contém "{{ lastQuery() }}"</span>
+                } @else if (r.score !== null) {
+                  <div class="relevance" [title]="'Relevância em relação ao melhor resultado: ' + scorePercent(r.score) + '%'">
                     <div class="bar"><div class="fill" [style.width.%]="scorePercent(r.score)"></div></div>
                     <span>{{ scorePercent(r.score) }}%</span>
                   </div>

@@ -17,8 +17,8 @@ const summaryData: HomeSummary = {
 const semanticResponse: SearchResponse = {
   mode: 'semantic',
   results: [
-    { item: { id: 1, name: 'Moeda de 1 real', price: 0, collection_id: 7 }, score: 0.62 },
-    { item: { id: 2, name: 'Moeda de 50 centavos', price: 0, collection_id: 7 }, score: 0.48 },
+    { item: { id: 1, name: 'Moeda de 1 real', price: 0, collection_id: 7 }, score: 0.62, match: 'semantic' },
+    { item: { id: 2, name: 'Moeda de 50 centavos', price: 0, collection_id: 7 }, score: 0.48, match: 'semantic' },
   ],
 };
 
@@ -147,8 +147,21 @@ describe('Home', () => {
     expect(navigate).toHaveBeenCalledWith(['/collections', 7, 'items']);
   });
 
-  it('converte score em porcentagem', () => {
+  it('relevância é relativa ao melhor resultado por significado', () => {
+    search.mockReturnValue(
+      of<SearchResponse>({
+        mode: 'semantic',
+        results: [
+          { item: { id: 9, name: 'Luvas de Boxe', price: 0, collection_id: 1 }, score: 0.15, match: 'text' },
+          ...semanticResponse.results,
+        ],
+      }),
+    );
     const home = setup();
-    expect(home.scorePercent(0.623)).toBe(62);
+    home.useSuggestion('moeda');
+
+    // o resultado por texto (nota 0,15) não serve de referência
+    expect(home.scorePercent(0.62)).toBe(100);
+    expect(home.scorePercent(0.48)).toBe(77);
   });
 });
