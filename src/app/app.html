@@ -17,6 +17,18 @@
     </a>
 
     <div class="header-actions">
+      @if (currentUser()) {
+        <button
+          type="button"
+          class="quick-add-btn"
+          (click)="openQuickAdd()"
+          aria-label="Cadastro rápido com IA"
+          title="Cadastro rápido com IA"
+        >
+          ✨ <span class="quick-add-label">Cadastro rápido</span>
+        </button>
+      }
+
       <button
         type="button"
         class="theme-toggle"
@@ -89,5 +101,8 @@
     <router-outlet></router-outlet>
     <app-confirmation-modal></app-confirmation-modal>
     <app-alert-modal></app-alert-modal>
+    @if (quickAddOpen()) {
+      <app-quick-add-modal (onClose)="closeQuickAdd()"></app-quick-add-modal>
+    }
   </section>
 </main>
